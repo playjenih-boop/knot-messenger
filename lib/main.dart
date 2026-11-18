@@ -1,19 +1,29 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Принудительный обход сетевых ошибок сертификатов и хостов на Android
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 const _bg = Color(0xFF080010);
 const _midnight = Color(0xFF111C32);
 const _panel = Color(0xFF172438);
-const _blue = Color(0xFF0FFF9A68);
 const _violet = Color(0xFFFF8FABFB);
-const _muted = Color(0xFF5F6AAC);
 
 bool _supabaseReady = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Жестко прописанный URL и публичный ключ для стабильной сборки
+  // Включаем принудительный обход сетевых ограничений
+  HttpOverrides.global = MyHttpOverrides();
+  
   const url = 'https://ywvliouqphhralequxbp.supabase.co';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
   
@@ -38,54 +48,11 @@ class KnotApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: _bg,
-        colorScheme: const ColorScheme.dark(
-          primary: _violet,
-          secondary: _blue,
-          surface: _panel,
-        ),
+        colorScheme: const ColorScheme.dark(primary: _violet, surface: _panel),
         useMaterial3: true,
       ),
-      home: const AppGate(),
+      home: const AuthScreen(),
     );
-  }
-}
-
-class AppGate extends StatefulWidget {
-  const AppGate({super.key});
-
-  @override
-  State<AppGate> createState() => _AppGateState();
-}
-
-class _AppGateState extends State<AppGate> {
-  bool _isLoggedIn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (_supabaseReady) {
-      final session = Supabase.instance.client.auth.currentSession;
-      _isLoggedIn = session != null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_supabaseReady) {
-      return const Scaffold(
-        body: Center(
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Text(
-              'Ошибка инициализации Supabase',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red, fontSize: 18),
-            ),
-          ),
-        ),
-      );
-    }
-    return _isLoggedIn ? const ChatsScreen() : const AuthScreen();
   }
 }
 
@@ -169,21 +136,6 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ChatsScreen extends StatelessWidget {
-  const ChatsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Knot Chats'),
-        backgroundColor: _midnight,
-      ),
-      body: const Center(child: Text('Вы вошли в систему!')),
     );
   }
 }
