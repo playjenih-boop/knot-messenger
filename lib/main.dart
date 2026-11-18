@@ -6,7 +6,7 @@ const _midnight = Color(0xFF111C32);
 const _panel = Color(0xFF17243B);
 const _blue = Color(0xFF0FF5A9E8);
 const _violet = Color(0xFF0FFE8AFB);
-const _muted = Color(0xFF5F6AACZ);
+const _muted = Color(0xFF5F6AAC);
 
 bool _supabaseReady = false;
 
