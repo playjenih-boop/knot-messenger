@@ -6,7 +6,7 @@ const String supabaseUrl =
     'https://ywvliougphhralequxbp.supabase.co';
 
 const String supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
+    'sb_publishable_O1bLWiOWytYx-SykbqFQLQ_jNwBeZlv';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
