@@ -22,14 +22,19 @@ jobs:
       - name: Create Android platform files
         run: flutter create . --platforms=android
 
-      - name: Add Internet Permission to Manifest
+      - name: Fix Android Manifest and Network Security
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST" ]; then
+            # Добавляем интернет-разрешение
             if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
               sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
-              echo "Internet permission added successfully."
             fi
+            # Добавляем флаг разрешающий сетевые запросы
+            if ! grep -q "android:usesCleartextTraffic" "$MANIFEST"; then
+              sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
+            fi
+            echo "Manifest patched successfully."
           fi
 
       - name: Build APK
