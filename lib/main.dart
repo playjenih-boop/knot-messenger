@@ -13,7 +13,7 @@ bool _supabaseReady = false;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Жестко прописанные параметры для обхода проблем с GitHub Actions
+  // Жестко прописанный URL и публичный ключ для стабильной сборки
   const url = 'https://ywvliouqphhralequxbp.supabase.co';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
   
@@ -77,7 +77,7 @@ class _AppGateState extends State<AppGate> {
           child: Padding(
             padding: EdgeInsets.all(24.0),
             child: Text(
-              'Ошибка инициализации Supabase. Проверьте URL.',
+              'Ошибка инициализации Supabase',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.red, fontSize: 18),
             ),
