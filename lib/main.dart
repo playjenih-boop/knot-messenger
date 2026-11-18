@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _bg = Color(0xFF080D10);
+const _bg = Color(0xFF080010);
 const _midnight = Color(0xFF111C32);
-const _panel = Color(0xFF17243B);
-const _blue = Color(0xFF0FF5A9E8);
-const _violet = Color(0xFF0FFE8AFB);
+const _panel = Color(0xFF172438);
+const _blue = Color(0xFF0FFF9A68);
+const _violet = Color(0xFFFF8FABFB);
 const _muted = Color(0xFF5F6AAC);
 
 bool _supabaseReady = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  const url = String.fromEnvironment('SUPABASE_URL');
-  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  
+  const url = 'https://ywvliouqphhralequxbp.supabase.co';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
+  
   if (url.isNotEmpty && anonKey.isNotEmpty) {
     await Supabase.initialize(url: url, anonKey: anonKey);
     _supabaseReady = true;
   }
+  
   runApp(const KnotApp());
 }
 
@@ -25,48 +28,50 @@ class KnotApp extends StatelessWidget {
   const KnotApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'Knot Messenger',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: _bg,
-          colorScheme: const ColorScheme.dark(
-            primary: _violet,
-            secondary: _blue,
-            surface: _panel,
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Knot Messenger',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: _bg,
+        colorScheme: const ColorScheme.dark(
+          primary: _violet,
+          secondary: _blue,
+          surface: _panel,
+        ),
+        useMaterial3: true,
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: _panel,
+          hintStyle: const TextStyle(color: _muted),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
-          useMaterial3: true,
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: _panel,
-            hintStyle: const TextStyle(color: _muted),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: .06)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: _violet, width: 1.4),
-            ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: .06)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: _violet, width: 1.4),
           ),
         ),
-        home: const _AppGate(),
-      );
+      ),
+      home: const AppGate(),
+    );
+  }
 }
 
-class _AppGate extends StatefulWidget {
-  const _AppGate();
+class AppGate extends StatefulWidget {
+  const AppGate({super.key});
 
   @override
-  State<_AppGate> createState() => _AppGateState();
+  State<AppGate> createState() => _AppGateState();
 }
 
-class _AppGateState extends State<_AppGate> {
+class _AppGateState extends State<AppGate> {
   bool _configured = false;
   bool _loading = true;
   bool _isLoggedIn = false;
@@ -96,16 +101,16 @@ class _AppGateState extends State<_AppGate> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
-                const SizedBox(height: 16),
-                const Text(
+              children: const [
+                Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+                SizedBox(height: 16),
+                Text(
                   'Требуется настройка Supabase',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Укажите переменные SUPABASE_URL и SUPABASE_ANON_KEY в GitHub Secrets.',
+                SizedBox(height: 8),
+                Text(
+                  'Проверьте правильность URL в коде приложения.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -115,7 +120,6 @@ class _AppGateState extends State<_AppGate> {
         ),
       );
     }
-
     return _isLoggedIn ? const ChatsScreen() : const AuthScreen();
   }
 }
@@ -138,6 +142,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _loading = true;
       _error = null;
     });
+
     try {
       await Supabase.instance.client.auth.signInWithOtp(
         email: _emailController.text.trim(),
@@ -166,7 +171,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const Text(
                 'Вход в Knot',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -224,22 +229,20 @@ class ChatsScreen extends StatelessWidget {
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const _AppGate()),
+                MaterialPageRoute(builder: (_) => const AppGate()),
               );
             },
           ),
         ],
       ),
       body: ListView.builder(
-        itemCount: 0, // Список чатов пока пуст
+        itemCount: 0,
         itemBuilder: (context, index) => const ListTile(),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: _violet,
         child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          // Действие для создания нового чата
-        },
+        onPressed: () {},
       ),
     );
   }
