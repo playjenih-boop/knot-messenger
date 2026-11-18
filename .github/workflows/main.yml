@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create Android platform files
+        run: flutter create . --platforms=android
+
       - name: Build APK
         run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
