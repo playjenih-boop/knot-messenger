@@ -85,7 +85,80 @@ class KnotApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Knot',
-      home: AuthScreen(),
+      home: AuthGate(),
+    );
+  }
+}
+
+// Отслеживание авторизации Supabase
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Supabase.instance.client.auth;
+
+    return StreamBuilder<AuthState>(
+      stream: auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        final session =
+            snapshot.data?.session ?? auth.currentSession;
+
+        if (session != null) {
+          return const KnotHomeScreen();
+        }
+
+        return const AuthScreen();
+      },
+    );
+  }
+}
+
+// Временный главный экран после входа
+class KnotHomeScreen extends StatelessWidget {
+  const KnotHomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Knot Messenger'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Выйти',
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 64,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Добро пожаловать в Knot!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              user?.email ?? 'Пользователь авторизован',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
