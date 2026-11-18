@@ -26,7 +26,7 @@ class KnotApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Knot',
+        title: 'Knot Messenger',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
@@ -69,11 +69,16 @@ class _AppGate extends StatefulWidget {
 class _AppGateState extends State<_AppGate> {
   bool _configured = false;
   bool _loading = true;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _configured = _supabaseReady;
+    if (_configured) {
+      final session = Supabase.instance.client.auth.currentSession;
+      _isLoggedIn = session != null;
+    }
     _loading = false;
   }
 
@@ -81,33 +86,160 @@ class _AppGateState extends State<_AppGate> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: _violet)),
       );
     }
+    if (!_configured) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+                const SizedBox(height: 16),
+                const Text(
+                  'Требуется настройка Supabase',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Укажите переменные SUPABASE_URL и SUPABASE_ANON_KEY в GitHub Secrets.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _isLoggedIn ? const ChatsScreen() : const AuthScreen();
+  }
+}
+
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
+
+  @override
+  State<AuthScreen> createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends State<AuthScreen> {
+  final _emailController = TextEditingController();
+  bool _loading = false;
+  String? _error;
+  bool _sent = false;
+
+  Future<void> _signIn() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await Supabase.instance.client.auth.signInWithOtp(
+        email: _emailController.text.trim(),
+        emailRedirectTo: 'io.supabase.knot://login-callback/',
+      );
+      setState(() => _sent = true);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Icon(Icons.chat_bubble_outline, size: 64, color: _violet),
               const SizedBox(height: 16),
               const Text(
-                'Knot Messenger',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                'Вход в Knot',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(
-                _configured
-                    ? 'Supabase подключен успешно. Готово к работе!'
-                    : 'Требуется настройка переменных Supabase URL и Anon Key.',
+              const Text(
+                'Введите ваш Email для авторизации через OTP',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(color: Colors.grey),
               ),
+              const SizedBox(height: 32),
+              if (_sent)
+                const Text(
+                  'Ссылка для входа отправлена на ваш Email!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.green, fontSize: 16),
+                )
+              else ...[
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(hintText: 'name@example.com'),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  ),
+                FilledButton(
+                  onPressed: _loading ? null : _signIn,
+                  style: FilledButton.styleFrom(backgroundColor: _violet),
+                  child: _loading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Продолжить'),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ChatsScreen extends StatelessWidget {
+  const ChatsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Knot Chats'),
+        backgroundColor: _midnight,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const _AppGate()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: 0, // Список чатов пока пуст
+        itemBuilder: (context, index) => const ListTile(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: _violet,
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          // Действие для создания нового чата
+        },
       ),
     );
   }
