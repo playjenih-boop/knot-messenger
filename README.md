@@ -47,9 +47,9 @@ Use only the public anon/publishable key in the mobile client. **Never** embed t
 2. Supabase sends an email confirmation. The user must confirm it and return to the app / sign in.
 3. After email authentication, Knot asks for a phone number in E.164 format (for example, `+380XXXXXXXXX`).
 4. Supabase sends an SMS OTP. The app verifies it with the `phoneChange` OTP flow.
-5. After successful phone verification, the app opens the Knot home screen. 
+5. After successful phone verification, the app opens the Knot home screen.
 
-The phone number is stored in Supabase Auth's protected user record, not in the publicly discoverable profile table. The current client gate uses the authenticated user's `phone` field as the completion signal. Before production, add a server-side onboarding-completion check (e.g. a trusted Edge Function / database trigger) and verify the exact behavior against the configured Supabase Auth version.
+The phone number is stored in Supabase Auth's protected user record, not in the publicly discoverable profile table. The current client gate uses the authenticated user's `phone` field as the completion signal. Before production, add a server-side onboarding-completion check (e.g. a trusted Edge Function / database trigger) and verify the exact behavior against the configured Supabase Auth version. 
 
 ## Important production work still required
 
