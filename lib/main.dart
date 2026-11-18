@@ -1,27 +1,80 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-  }
-}
+const String supabaseUrl =
+    'https://ywvliougphhralequxbp.supabase.co';
+
+const String supabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  HttpOverrides.global = MyHttpOverrides();
-  
-  const url = 'https://ywvliouqphhralequxbp.supabase.co';
-  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
-  
+
   try {
-    await Supabase.initialize(url: url, anonKey: anonKey);
-  } catch (_) {}
-  
-  runApp(const KnotApp());
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+
+    runApp(const KnotApp());
+  } catch (e) {
+    runApp(KnotStartupError(error: e.toString()));
+  }
+}
+
+class KnotStartupError extends StatelessWidget {
+  const KnotStartupError({super.key, required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.cloud_off,
+                  size: 48,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Не удалось запустить Knot',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Проверь подключение к интернету '
+                  'и настройки сервера Supabase.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                SelectableText(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class KnotApp extends StatelessWidget {
@@ -31,6 +84,7 @@ class KnotApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'Knot',
       home: AuthScreen(),
     );
   }
@@ -44,12 +98,29 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _emailController = TextEditingController();
+  final TextEditingController _emailController =
+      TextEditingController();
+
   bool _loading = false;
-  String? _error;
   bool _sent = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signIn() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() {
+        _error = 'Введите корректный адрес электронной почты.';
+      });
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -57,14 +128,27 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       await Supabase.instance.client.auth.signInWithOtp(
-        email: _emailController.text.trim(),
+        email: email,
         emailRedirectTo: 'io.supabase.knot://login-callback/',
       );
-      setState(() => _sent = true);
+
+      if (!mounted) return;
+
+      setState(() {
+        _sent = true;
+      });
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (!mounted) return;
+
+      setState(() {
+        _error = 'Ошибка входа: $e';
+      });
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -73,7 +157,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,31 +165,62 @@ class _AuthScreenState extends State<AuthScreen> {
               const Text(
                 'Вход в Knot',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 32),
-              if (_sent)
+
+              if (_sent) ...[
+                const Icon(
+                  Icons.mark_email_read,
+                  color: Colors.green,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
                 const Text(
                   'Ссылка для входа отправлена на ваш Email!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.green, fontSize: 16),
-                )
-              else ...[
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 16,
+                  ),
+                ),
+              ] else ...[
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(hintText: 'name@example.com'),
                   keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    hintText: 'name@example.com',
+                    labelText: 'Электронная почта',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+
+                if (_error != null) ...[
+                  SelectableText(
+                    _error!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                    ),
                   ),
+                  const SizedBox(height: 16),
+                ],
+
                 FilledButton(
                   onPressed: _loading ? null : _signIn,
                   child: _loading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text('Продолжить'),
                 ),
               ],
