@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Принудительный обход сетевых ошибок сертификатов и хостов на Android
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -11,17 +10,8 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-const _bg = Color(0xFF080010);
-const _midnight = Color(0xFF111C32);
-const _panel = Color(0xFF172438);
-const _violet = Color(0xFFFF8FABFB);
-
-bool _supabaseReady = false;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Включаем принудительный обход сетевых ограничений
   HttpOverrides.global = MyHttpOverrides();
   
   const url = 'https://ywvliouqphhralequxbp.supabase.co';
@@ -29,10 +19,7 @@ Future<void> main() async {
   
   try {
     await Supabase.initialize(url: url, anonKey: anonKey);
-    _supabaseReady = true;
-  } catch (e) {
-    _supabaseReady = false;
-  }
+  } catch (_) {}
   
   runApp(const KnotApp());
 }
@@ -42,16 +29,9 @@ class KnotApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Knot Messenger',
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: _bg,
-        colorScheme: const ColorScheme.dark(primary: _violet, surface: _panel),
-        useMaterial3: true,
-      ),
-      home: const AuthScreen(),
+      home: AuthScreen(),
     );
   }
 }
@@ -98,8 +78,6 @@ class _AuthScreenState extends State<AuthScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.chat_bubble_outline, size: 64, color: _violet),
-              const SizedBox(height: 16),
               const Text(
                 'Вход в Knot',
                 textAlign: TextAlign.center,
@@ -126,7 +104,6 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                 FilledButton(
                   onPressed: _loading ? null : _signIn,
-                  style: FilledButton.styleFrom(backgroundColor: _violet),
                   child: _loading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Продолжить'),
