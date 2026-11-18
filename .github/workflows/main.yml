@@ -1,66 +1,32 @@
 
-name: Unpack Knot project
+name: Build APK
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  unpack:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Download repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x'
+          channel: 'stable'
+          cache: true
 
-      - name: Extract Knot archive
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          from zipfile import ZipFile
-          import shutil
+      - name: Install dependencies
+        run: flutter pub get
 
-          archive = Path("knot_starter.zip")
-          if not archive.exists():
-              raise SystemExit("knot_starter.zip not found")
+      - name: Build APK
+        run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
-          temp = Path("knot_extracted")
-          temp.mkdir(exist_ok=True)
-
-          with ZipFile(archive) as z:
-              for info in z.infolist():
-                  target = (temp / info.filename).resolve()
-                  if not target.is_relative_to(temp.resolve()):
-                      raise SystemExit("Unsafe archive path")
-              z.extractall(temp)
-
-          items = list(temp.iterdir())
-          source = items[0] if len(items) == 1 and items[0].is_dir() else temp
-
-          for item in source.iterdir():
-              if item.name == ".git":
-                  continue
-              dest = Path(item.name)
-              if item.is_dir():
-                  shutil.copytree(item, dest, dirs_exist_ok=True)
-              else:
-                  shutil.copy2(item, dest)
-
-          shutil.rmtree(temp)
-          archive.unlink()
-
-          print("Knot project extracted successfully")
-          PY
-
-      - name: Save extracted project
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "Extract Knot starter project"
-            git push
-          fi
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
           
