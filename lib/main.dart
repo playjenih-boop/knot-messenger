@@ -13,12 +13,15 @@ bool _supabaseReady = false;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Жестко прописанные параметры для обхода проблем с GitHub Actions
   const url = 'https://ywvliouqphhralequxbp.supabase.co';
-  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
+  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3dmxpb3VncGhocmFsZXF1eGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMDAwMDAsImV4cCI6MjA1NTU3NjAwMH0';
   
-  if (url.isNotEmpty && anonKey.isNotEmpty) {
+  try {
     await Supabase.initialize(url: url, anonKey: anonKey);
     _supabaseReady = true;
+  } catch (e) {
+    _supabaseReady = false;
   }
   
   runApp(const KnotApp());
@@ -41,23 +44,6 @@ class KnotApp extends StatelessWidget {
           surface: _panel,
         ),
         useMaterial3: true,
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: _panel,
-          hintStyle: const TextStyle(color: _muted),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: .06)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: _violet, width: 1.4),
-          ),
-        ),
       ),
       home: const AppGate(),
     );
@@ -72,49 +58,28 @@ class AppGate extends StatefulWidget {
 }
 
 class _AppGateState extends State<AppGate> {
-  bool _configured = false;
-  bool _loading = true;
   bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
-    _configured = _supabaseReady;
-    if (_configured) {
+    if (_supabaseReady) {
       final session = Supabase.instance.client.auth.currentSession;
       _isLoggedIn = session != null;
     }
-    _loading = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (!_supabaseReady) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: _violet)),
-      );
-    }
-    if (!_configured) {
-      return Scaffold(
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
-                SizedBox(height: 16),
-                Text(
-                  'Требуется настройка Supabase',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Проверьте правильность URL в коде приложения.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+            padding: EdgeInsets.all(24.0),
+            child: Text(
+              'Ошибка инициализации Supabase. Проверьте URL.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.red, fontSize: 18),
             ),
           ),
         ),
@@ -173,12 +138,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Введите ваш Email для авторизации через OTP',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
               const SizedBox(height: 32),
               if (_sent)
                 const Text(
@@ -223,27 +182,8 @@ class ChatsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Knot Chats'),
         backgroundColor: _midnight,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const AppGate()),
-              );
-            },
-          ),
-        ],
       ),
-      body: ListView.builder(
-        itemCount: 0,
-        itemBuilder: (context, index) => const ListTile(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: _violet,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {},
-      ),
+      body: const Center(child: Text('Вы вошли в систему!')),
     );
   }
 }
